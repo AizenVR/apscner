@@ -1,14 +1,5 @@
 language = "python3"
 run = "python3 aizen_bot.py"
 
-[nix]
-channel = "stable"
-
 [deployment]
 run = ["python3", "aizen_bot.py"]
-
-[packager]
-language = "python3"
-
-[packager.features]
-enabledForHosting = true
