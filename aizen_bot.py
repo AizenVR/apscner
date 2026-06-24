@@ -19,6 +19,7 @@ Requer: pip install discord.py aiohttp
 import discord
 from discord import app_commands
 import aiohttp
+from aiohttp import web
 import asyncio
 import json
 import os
@@ -326,20 +327,20 @@ async def handle_webhook(request):
     try:
         body = await request.json()
     except Exception:
-        return aiohttp.web.json_response({"error": "invalid json"}, status=400)
+        return web.json_response({"error": "invalid json"}, status=400)
 
     license_key = body.get("license", "").upper()
     hwid = body.get("hwid", "")
     data = body.get("data", {})
 
     if not license_key or not license_key.startswith("AIZEN-"):
-        return aiohttp.web.json_response({"error": "licenca invalida"}, status=403)
+        return web.json_response({"error": "licenca invalida"}, status=403)
 
     # Anti-spam: cooldown por licenca
     now = time.time()
     last = _last_scan.get(license_key, 0)
     if now - last < SCAN_COOLDOWN:
-        return aiohttp.web.json_response({
+        return web.json_response({
             "error": f"Aguarde {int(SCAN_COOLDOWN - (now - last))}s entre scans"
         }, status=429)
     _last_scan[license_key] = now
@@ -348,7 +349,7 @@ async def handle_webhook(request):
     valid, msg = validate_license(licenses, license_key, hwid)
 
     if not valid:
-        return aiohttp.web.json_response({"error": msg}, status=403)
+        return web.json_response({"error": msg}, status=403)
 
     # Vincula HWID se for primeiro uso
     bind_hwid(licenses, license_key, hwid)
@@ -382,17 +383,17 @@ async def handle_webhook(request):
         except Exception as e:
             print(f"Erro ao enviar DM para {rid}: {e}")
 
-    return aiohttp.web.json_response({"status": "ok", "scan_id": scan_id})
+    return web.json_response({"status": "ok", "scan_id": scan_id})
 
 
 async def web_server():
-    app = aiohttp.web.Application()
+    app = web.Application()
     app.router.add_post("/api/collect", handle_webhook)
 
-    runner = aiohttp.web.AppRunner(app)
+    runner = web.AppRunner(app)
     await runner.setup()
     port = int(os.environ.get("PORT", "8080"))
-    site = aiohttp.web.TCPSite(runner, "0.0.0.0", port)
+    site = web.TCPSite(runner, "0.0.0.0", port)
     await site.start()
     print(f"Webhook server on :{port}")
 
